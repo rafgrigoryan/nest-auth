@@ -1,0 +1,45 @@
+services:
+  nestjs-auth-redis:
+    container_name: nestjs-auth-redis
+    image: redis:alpine
+    restart: unless-stopped
+    volumes:
+      - redis:/data
+    ports:
+      - 6380:${REDIS_PORT}
+    networks:
+      - nestjs-auth-intranet
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      retries: 3
+      timeout: 3s
+  
+  nestjs-auth-api:
+    container_name: nestjs-auth-api
+    image: nestjs-auth-api
+    # restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development # Only will build development stage from our dockerfile
+    ports:
+      - ${PORT}:${PORT}
+    networks:
+      - nestjs-auth-intranet
+    env_file: 
+      - .env # Available inside container not in compose file
+    environment:
+      - REDIS_HOST=nestjs-auth-redis
+    depends_on:
+      nestjs-auth-redis:
+        condition: service_healthy
+    command: npm run start # Run in development mode
+volumes:
+  redis:
+    name: nestjs-auth-redis
+
+networks:
+  nestjs-auth-intranet:
+    name: nestjs-auth-intranet
+    driver: bridge
