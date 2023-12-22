@@ -25,7 +25,7 @@ async function bootstrap() {
   const port = configService.get('PORT');
 
   await app.listen(port, () => {
-    console.log(`myapp running at ${port}`);
+    console.log(`Vocaby running at ${port}`);
   });
 }
 

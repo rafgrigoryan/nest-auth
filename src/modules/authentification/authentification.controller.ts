@@ -1,6 +1,13 @@
-import { Controller, Post, Body, ValidationPipe } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  ValidationPipe,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiNotFoundResponse,
@@ -17,6 +24,10 @@ import {
   ResetPasswordConfirmPinDto,
   ResetPasswordVerifyDto,
 } from './dto/reset-password';
+
+import { AuthGuard } from 'src/common/decorators/auth.guard';
+import { RolesGuard } from 'src/common/decorators/roles.guard';
+import { Roles } from 'src/common/enums/sign.enum';
 
 @ApiTags('Sign Up/In, Reset Password')
 @Controller('auth')
@@ -77,6 +88,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Change Password with reset token' })
   @ApiBadRequestResponse({ description: 'Wrong data sent' })
   @ApiCreatedResponse({ description: 'Password Changed !' })
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard, new RolesGuard([Roles.admin, Roles.user]))
   @Post('reset-password/change')
   async resetPasswordChange(
     @Body(ValidationPipe) body: ResetChangePasswordDto,

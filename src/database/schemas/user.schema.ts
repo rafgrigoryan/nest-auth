@@ -1,4 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { RoleTypes } from 'src/common/interfaces/sign.interfaces';
 
 @Schema()
 export class User {
@@ -23,6 +24,11 @@ export class User {
     maxlength: 100,
   })
   password: string;
+
+  @Prop({
+    required: true,
+  })
+  role: RoleTypes;
 
   @Prop({ default: Date.now }) // Set default value to current date/time
   createdAt: Date;

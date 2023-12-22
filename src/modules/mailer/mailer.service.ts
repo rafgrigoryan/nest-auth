@@ -8,8 +8,8 @@ export class EmailService {
   async sendRegEmail(name: string, email: string, pin: number): Promise<void> {
     await this.mailerService.sendMail({
       to: email,
-      from: 'myapp support',
-      subject: 'Welcome to myapp! Confirm your Email',
+      from: 'Vocaby support',
+      subject: 'Welcome to Vocaby! Confirm your Email',
       template: './reg.template.ejs',
       context: {
         name,
@@ -21,8 +21,8 @@ export class EmailService {
   async sendResetEmail(email: string, pin: number): Promise<void> {
     await this.mailerService.sendMail({
       to: email,
-      from: 'myapp support',
-      subject: 'Hey From myapp! Confirm your Email to reset Password',
+      from: 'Vocaby support',
+      subject: 'Hey From Vocaby! Confirm your Email to reset Password',
       template: './reset.template.ejs',
       context: {
         pin,

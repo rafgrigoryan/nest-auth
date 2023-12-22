@@ -23,12 +23,14 @@ import { generateResponse } from 'src/common/utils/global.util';
 import { BcryptService } from 'src/common/utils/bcrypt.util';
 import { EmailService } from '../mailer/mailer.service';
 import { SignInDto } from './dto/sign-in.dto';
-import { SignTargets } from 'src/common/enums/sign-targets.enum';
+import { SignTargets, Roles, TokenTypes } from 'src/common/enums/sign.enum';
 import {
   ResetChangePasswordDto,
   ResetPasswordConfirmPinDto,
   ResetPasswordVerifyDto,
 } from './dto/reset-password';
+
+import { TokensService } from './tokens.service';
 
 @Injectable()
 export class AuthService {
@@ -42,6 +44,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly emailService: EmailService,
+    private readonly tokensService: TokensService,
   ) {
     this.jwtSecret = this.configService.get('jwt.secret');
     this.jwtAccTTL = this.configService.get('jwt.accessTokenTtl');
@@ -85,21 +88,17 @@ export class AuthService {
         name: cachedData.name,
         email,
         password: await this.bcryptService.hash(cachedData.password),
+        role: Roles.user,
       }).save();
 
-      const accessToken = this.jwtService.sign(
-        { id: user._id },
-        { secret: this.jwtSecret, expiresIn: this.jwtAccTTL + 'h' },
-      );
-      const refreshToken = this.jwtService.sign(
-        { id: user._id },
-        { secret: this.jwtSecret, expiresIn: this.jwtRefTTl + 'd' },
-      );
+      const { accessToken, refreshToken } =
+        await this.tokensService.generateTokens(user._id, Roles.user);
 
       const responseData: ISignServiceReturnData = {
         id: user._id,
         name: user.name,
         email: user.email,
+        role: Roles.user,
         accessToken,
         refreshToken,
       };
@@ -120,24 +119,20 @@ export class AuthService {
         user.password,
       );
       if (!isPasswordMatch) throw new BadRequestException('Invalid password');
-      const accessToken = this.jwtService.sign(
-        { id: user._id },
-        { secret: this.jwtSecret, expiresIn: this.jwtAccTTL + 'h' },
-      );
-      const refreshToken = this.jwtService.sign(
-        { id: user._id },
-        { secret: this.jwtSecret, expiresIn: this.jwtRefTTl + 'd' },
-      );
+
+      const { accessToken, refreshToken } =
+        await this.tokensService.generateTokens(user._id, Roles[user.role]);
 
       const responseData: ISignServiceReturnData = {
         id: user._id,
         name: user.name,
         email: user.email,
+        role: Roles.user,
         accessToken,
         refreshToken,
       };
 
-      return generateResponse('User created successfully !', responseData);
+      return generateResponse('User Data Recieved !', responseData);
     } catch (error) {
       throw error;
     }
@@ -193,9 +188,11 @@ export class AuthService {
   ): Promise<IReturnData> {
     try {
       const { email, token, password } = resetChangePasswordData;
+
       const cachedData: ICacheObject = await this.redis.get(email);
-      if (token !== cachedData.token)
+      if (token !== cachedData?.token)
         throw new BadRequestException('Wrong Token !');
+
       await this.userModel.findOneAndUpdate(
         { email: email },
         { password: await this.bcryptService.hash(password) },
